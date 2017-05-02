@@ -47,6 +47,29 @@ class InfoParser(HTMLParser):
         continue
       self.words.append(word.lower())
 
+  def getskiplist(i, size):
+    slist = []
+    for skip in range(3):
+      sl = []
+      for a in range(size):
+        for b in range(skip):
+
+
+
+  def count(self, s):
+    """ Counts the occurences of the given string, allowing skip bigrams. """
+    sp = s.split()
+    if len(sp) == 1:
+      return self.words.count(s)
+
+    count = 0    
+    for word in range(len(self.words)):
+      index = word
+      if self.words[word] == sp[0]:
+        if sp in self.getskiplist(word, len(sp)):
+          count = count + 1
+    return count
+
 def parse(files):
   data = {}
   for path in files:
