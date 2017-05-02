@@ -4,14 +4,6 @@ from os import listdir
 from os.path import isfile, join
 from html.parser import HTMLParser
 
-class BasicParser(HTMLParser):
-  def __init__(self):
-    super().__init__()
-    self.data = ""
-
-  def handle_data(self, tag):
-    self.data += str(tag)
-
 class InfoParser(HTMLParser):
   def __init__(self):
     super().__init__()
@@ -47,27 +39,34 @@ class InfoParser(HTMLParser):
         continue
       self.words.append(word.lower())
 
-  def getskiplist(i, size):
-    slist = []
-    for skip in range(3):
-      sl = []
-      for a in range(size):
-        for b in range(skip):
-
-
-
   def count(self, s):
     """ Counts the occurences of the given string, allowing skip bigrams. """
+    words = self.words
     sp = s.split()
     if len(sp) == 1:
-      return self.words.count(s)
+      return words.count(s)
 
-    count = 0    
-    for word in range(len(self.words)):
-      index = word
-      if self.words[word] == sp[0]:
-        if sp in self.getskiplist(word, len(sp)):
-          count = count + 1
+    count = 0
+    spindex = 0
+    index = 0
+    skipped = 0
+    while index < len(words):
+      if words[index] == sp[spindex]:
+        if spindex == len(sp) - 1:
+          count += 1
+          spindex = 0
+        else:
+          spindex += 1
+        skipped = 0
+        index += 1
+        continue
+      
+      skipped += 1
+      index += 1
+      if skipped == 2:
+        spindex = 0
+        skipped = 0
+
     return count
 
 def parse(files):
