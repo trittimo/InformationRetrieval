@@ -45,7 +45,7 @@ class InfoParser(HTMLParser):
     for word in tag.split():
       if word == "\n":
         continue
-      self.words.append(word)
+      self.words.append(word.lower())
 
 def parse(files):
   data = {}
@@ -59,6 +59,7 @@ def parse(files):
     parser.data = ""
 
     parser.feed(content)
+    print(parser)
     data[path] = parser
 
   return data
@@ -71,9 +72,11 @@ def main():
   folder = argv[1] if argv[1].endswith('/') else argv[1] + '/'
   files = [folder + f for f in listdir(folder) if isfile(join(folder, f))]
   print("Analyzing dataset in folder: ", folder)
-  parsedhtml = parse(files)
+  data = parse(files)
 
-  print(parsedhtml[files[0]])
+  print("Count occurence of 'adams'")
+  for p in data:
+    print(p + " contains " + str(data[p].words.count("adams")) + " occurences of 'adams'")
 
 
 if __name__ == "__main__":
