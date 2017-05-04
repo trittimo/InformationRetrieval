@@ -67,51 +67,63 @@ def parse(files):
 
 
 def main():
-  if len(argv) < 3:
-    print("Usage: info <dataset folder> <search phrase>", file=sys.stderr)
+  if len(argv) < 2:
+    print("Usage: info <dataset folder>", file=sys.stderr)
     return -1
   folder = argv[1] if argv[1].endswith('/') else argv[1] + '/'
   files = [folder + f for f in listdir(folder) if isfile(join(folder, f))]
-  phrase = (" ".join(argv[2:len(argv)])).lower()
+
 
   print("Analyzing dataset in folder: ", folder)
   dataset = parse(files)
 
   data = [(p, dataset[p]) for p in dataset]
 
-  scores = [[] for _ in data]
-  if len(argv) - 2 > 1:
-    print("Finding the best skip-bigram matches...")
-    scores = [[rank.countBigrams(doc[1], phrase)] for doc in data]
-  else:
-    print("Ignoring skip-bigram matches since only one word is being searched for")
+  while True:
+    print("Type 'exit' or 'quit' to quit.")
+    phrase = input("Enter your search query: ")
+    if phrase in ['exit', 'quit']:
+      return
 
-  print("Applying bm25 algorithm to dataset...")
-  
-  bm25data = [d[1] for d in data]
-  bm25result = rank.bm25(bm25data, phrase)
+    scores = [[] for _ in data]
+    if len(argv) - 2 > 1:
+      print("Finding the best skip-bigram matches...")
+      scores = [[rank.countBigrams(doc[1], phrase)] for doc in data]
+    else:
+      print("Ignoring skip-bigram matches since only one word is being searched for")
 
-  for i in range(len(bm25data)):
-    scores[i].append(bm25result[i] * BM25_MULTIPLIER)
-    scores[i] = sum(scores[i])
+    print("Applying bm25 algorithm to dataset...")
+    
+    bm25data = [d[1] for d in data]
+    bm25result = rank.bm25(bm25data, phrase)
 
-  bestscore = (0, None)
-  final = []
-  for i in range(len(scores)):
-    if scores[i] > bestscore[0]:
-      bestscore = (scores[i], data[i][0])
-    final.append((scores[i], data[i][0]))
+    for i in range(len(bm25data)):
+      scores[i].append(bm25result[i] * BM25_MULTIPLIER)
+      scores[i] = sum(scores[i])
 
-  sortedfinal = sorted(final, key = lambda tup: tup[0])
+    bestscore = (0, None)
+    final = []
+    for i in range(len(scores)):
+      if scores[i] > bestscore[0]:
+        bestscore = (scores[i], data[i][0])
+      final.append((scores[i], data[i][0]))
 
-  print("Documents score, sorted from highest to lowest:")
-  for s in sortedfinal:
-    print("\t" + s[1] + " => " + str(s[0]))
+    sortedfinal = sorted(final, key = lambda tup: tup[0])
+    sortedfinal.reverse()
 
-  if bestscore[1]:
-    print("The document which best matched the search was: " + bestscore[1])
-  else:
-    print("We didn't find any documents matching your search")
+    print("Documents score, sorted from highest to lowest:")
+    print("Results limited to 10 results")
+    limit = 0
+    for s in sortedfinal:
+      if limit > 9:
+        break
+      limit += 1
+      print("\t" + s[1] + " => " + str(s[0]))
+
+    if bestscore[1]:
+      print("The document which best matched the search was: " + bestscore[1])
+    else:
+      print("We didn't find any documents matching your search")
 
 
 if __name__ == "__main__":
