@@ -1,6 +1,7 @@
 #!python3
+import math
 
-def defCountBigram(words, query):
+def countBigrams(words, query):
   """
   Counts the occurences of the query in the given word list.
   Accounts for bigrams, so if the word list contains
@@ -23,7 +24,7 @@ def defCountBigram(words, query):
   while wordIndex < len(words):
     word = words[wordIndex]
     qword = queryWords[queryIndex]
-    print("Analyzing " + word + " against " + qword)
+    #print("Analyzing " + word + " against " + qword)
 
     # We found an occurence of the current query word
     if word == qword:
@@ -36,9 +37,8 @@ def defCountBigram(words, query):
       wordIndex += 1
       queryIndex += 1
 
-      # If we're at the last word in the query, we've successfuly found a match
+      # If we're at the last word in the query, we've successfully found a match
       if queryIndex == len(queryWords):
-        print("Found occurence: " + str(wordResetIndex))
         count += 1
 
         # Reset the word index to just after the first occurence of the first word
@@ -66,4 +66,67 @@ def defCountBigram(words, query):
 
   return count
 
-print(str(defCountBigram("dogs and dogs and cats".split(), "dogs and cats")))
+# Constants
+k1 = 1.2
+b = 0.75
+IDF_FLOOR = 0.1
+
+
+# Inverse document frequency
+def IDF(N, qcnt):
+  numer = (N - qcnt) + 0.5
+  denom = qcnt + 0.5
+  val = math.log(numer / denom)
+  if (val < IDF_FLOOR):
+    val = IDF_FLOOR
+  return val
+
+def searchDocument(doc, qs):
+  count = [0] * len(qs)
+  for word in doc:
+    for i in range(0, len(qs)):
+      if (word == qs[i]):
+        count[i] = count[i] + 1
+  return count
+
+def bm25(docs, query):
+  qs = query.split();
+  N = len(qs)
+  if (N == 0):
+    # print "You must specify a query"
+    return
+  D = len(docs)
+  if (D == 0):
+    # print "You must provide documents"
+    return
+  dlengths = [len(i) for i in docs]
+  avg_length = sum(dlengths) / D
+  # print "Average document length:", avg_length
+  result = {}
+  # print "Searching..."
+  counts = [searchDocument(d, qs) for d in docs]
+  #print "Counts:", counts
+  # print "Processing..."
+  qn = [0] * N
+  for result in counts:
+    for x in range(0, N):
+      if (result[x] > 0): # count > 0, inc n(qi)
+        qn[x] = qn[x] + 1
+  #print "qn:", qn
+  idf = [IDF(D, qn_i) for qn_i in qn]
+  #print "idf:", idf
+  scores = []
+  for d in range(0, D):
+    length = dlengths[d]
+    count = counts[d]
+    score = 0
+    for i in range(0, N):
+      tfreq = float(count[i]) / length
+      numer = tfreq * (k1 + 1)
+      denom = (tfreq) + (k1 * (1 - b + (b * length / avg_length)))
+      score = score + (idf[i] * numer / denom)
+      # print("Score: D=", d, "Q=", qs[i], "==>", score)
+    scores.append(score)
+  # Print what we are returning
+  # print "Final Scores:", scores
+  return scores
