@@ -1,4 +1,7 @@
 #!python3
+
+# Assignment completed by Michael Trittin and Andrew McKee
+
 from sys import argv
 from os import listdir
 from os.path import isfile, join
@@ -8,7 +11,7 @@ import sys
 import math
 import string
 
-SKIP_BIGRAM_WEIGHT = 2
+SKIP_BIGRAM_WEIGHT = 4
 
 class InfoParser(HTMLParser):
   def __init__(self):
@@ -65,10 +68,54 @@ def parse(files):
 
   return data
 
+def analyzePhrase(data, phrase):
+  scores = [[] for _ in data]
+  if len(phrase.split()) > 1:
+    print("Finding the best skip-bigram matches...")
+    bm25data = [d[1] for d in data]
+    bm25result = rank.bm25(bm25data, phrase, rank.countBigrams)
+    for i in range(len(bm25data)):
+      scores[i].append(bm25result[i] * SKIP_BIGRAM_WEIGHT)
+  else:
+    print("Ignoring skip-bigram matches since only one word is being searched for")
+
+  print("Applying bm25 algorithm to dataset...")
+  
+  bm25data = [d[1] for d in data]
+  bm25result = rank.bm25(bm25data, phrase)
+
+  for i in range(len(bm25data)):
+    scores[i].append(bm25result[i])
+    scores[i] = sum(scores[i])
+
+  bestscore = (0, None)
+  final = []
+  for i in range(len(scores)):
+    if scores[i] > bestscore[0]:
+      bestscore = (scores[i], data[i][0])
+    final.append((scores[i], data[i][0]))
+
+  sortedfinal = sorted(final, key = lambda tup: tup[0])
+  sortedfinal.reverse()
+
+  print("Documents score, sorted from highest to lowest:")
+  print("Results limited to 10 results")
+  limit = 0
+  for s in sortedfinal:
+    if limit > 9:
+      break
+    limit += 1
+    print("\t" + s[1] + " => " + str(s[0]))
+
+  if bestscore[1]:
+    print("The document which best matched the search was: " + bestscore[1])
+  else:
+    print("We didn't find any documents matching your search")
 
 def main():
   if len(argv) < 2:
     print("Usage: info <dataset folder>", file=sys.stderr)
+    print("Usage: info <dataset folder> [search phrases] ...")
     return -1
   folder = argv[1] if argv[1].endswith('/') else argv[1] + '/'
   files = [folder + f for f in listdir(folder) if isfile(join(folder, f))]
@@ -79,56 +126,21 @@ def main():
 
   data = [(p, dataset[p]) for p in dataset]
 
-  while True:
-    print("===========================================")
-    print("Type 'exit' or 'quit' to quit.")
-    phrase = input("Enter your search query: ")
-    if phrase in ['exit', 'quit']:
-      return
+  if len(argv) > 2:
+    for phrase in argv[2:len(argv)]:
+      print("===========================================")
+      print("Searching for phrase: " + phrase)
+      analyzePhrase(data, phrase)
+    return 0
+  else:
+    while True:
+      print("===========================================")
+      print("Type 'exit' or 'quit' to quit.")
+      phrase = input("Enter your search query: ")
+      if phrase in ['exit', 'quit']:
+        return 0
 
-    scores = [[] for _ in data]
-    if len(phrase.split()) > 1:
-      print("Finding the best skip-bigram matches...")
-      bm25data = [d[1] for d in data]
-      bm25result = rank.bm25(bm25data, phrase, rank.countBigrams)
-      for i in range(len(bm25data)):
-        scores[i].append(bm25result[i] * SKIP_BIGRAM_WEIGHT)
-    else:
-      print("Ignoring skip-bigram matches since only one word is being searched for")
-
-    print("Applying bm25 algorithm to dataset...")
-    
-    bm25data = [d[1] for d in data]
-    bm25result = rank.bm25(bm25data, phrase)
-
-    for i in range(len(bm25data)):
-      scores[i].append(bm25result[i])
-      scores[i] = sum(scores[i])
-
-    bestscore = (0, None)
-    final = []
-    for i in range(len(scores)):
-      if scores[i] > bestscore[0]:
-        bestscore = (scores[i], data[i][0])
-      final.append((scores[i], data[i][0]))
-
-    sortedfinal = sorted(final, key = lambda tup: tup[0])
-    sortedfinal.reverse()
-
-    print("Documents score, sorted from highest to lowest:")
-    print("Results limited to 10 results")
-    limit = 0
-    for s in sortedfinal:
-      if limit > 9:
-        break
-      limit += 1
-      print("\t" + s[1] + " => " + str(s[0]))
-
-    if bestscore[1]:
-      print("The document which best matched the search was: " + bestscore[1])
-    else:
-      print("We didn't find any documents matching your search")
-
+      analyzePhrase(data, phrase)
 
 if __name__ == "__main__":
   main()
