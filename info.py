@@ -80,15 +80,19 @@ def main():
   data = [(p, dataset[p]) for p in dataset]
 
   while True:
+    print("===========================================")
     print("Type 'exit' or 'quit' to quit.")
     phrase = input("Enter your search query: ")
     if phrase in ['exit', 'quit']:
       return
 
     scores = [[] for _ in data]
-    if len(argv) - 2 > 1:
+    if len(phrase.split()) > 1:
       print("Finding the best skip-bigram matches...")
-      scores = [[rank.countBigrams(doc[1], phrase)] for doc in data]
+      bm25data = [d[1] for d in data]
+      bm25result = rank.bm25(bm25data, phrase, rank.countBigrams)
+      for i in range(len(bm25data)):
+        scores[i].append(bm25result[i])
     else:
       print("Ignoring skip-bigram matches since only one word is being searched for")
 

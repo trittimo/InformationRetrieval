@@ -9,7 +9,7 @@ def countBigrams(words, query):
   we'll still find 1 occurence.
   """
 
-  queryWords = query.split()
+  queryWords = query[0].split()
 
   # We don't need to do anything fancy for one word queries
   if len(queryWords) == 1:
@@ -64,7 +64,7 @@ def countBigrams(words, query):
       wordIndex += 1
       skipped += 1
 
-  return count
+  return [count]
 
 # Constants
 k1 = 1.2
@@ -89,8 +89,8 @@ def searchDocument(doc, qs):
         count[i] = count[i] + 1
   return count
 
-def bm25(docs, query):
-  qs = query.split();
+def bm25(docs, query, searchFn = searchDocument):
+  qs = searchFn == searchDocument and query.split() or [query];
   N = len(qs)
   if (N == 0):
     # print "You must specify a query"
@@ -104,7 +104,7 @@ def bm25(docs, query):
   # print "Average document length:", avg_length
   result = {}
   # print "Searching..."
-  counts = [searchDocument(d, qs) for d in docs]
+  counts = [searchFn(d, qs) for d in docs]
   #print "Counts:", counts
   # print "Processing..."
   qn = [0] * N
