@@ -8,7 +8,7 @@ import sys
 import math
 import string
 
-BM25_MULTIPLIER = 1.5
+SKIP_BIGRAM_WEIGHT = 2
 
 class InfoParser(HTMLParser):
   def __init__(self):
@@ -92,7 +92,7 @@ def main():
       bm25data = [d[1] for d in data]
       bm25result = rank.bm25(bm25data, phrase, rank.countBigrams)
       for i in range(len(bm25data)):
-        scores[i].append(bm25result[i])
+        scores[i].append(bm25result[i] * SKIP_BIGRAM_WEIGHT)
     else:
       print("Ignoring skip-bigram matches since only one word is being searched for")
 
@@ -102,7 +102,7 @@ def main():
     bm25result = rank.bm25(bm25data, phrase)
 
     for i in range(len(bm25data)):
-      scores[i].append(bm25result[i] * BM25_MULTIPLIER)
+      scores[i].append(bm25result[i])
       scores[i] = sum(scores[i])
 
     bestscore = (0, None)
